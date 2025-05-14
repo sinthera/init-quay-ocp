@@ -1,0 +1,69 @@
+# Playbook ansible to create and configure a quay organization based on input vars
+# 
+### link to docs ---> https://galaxy.ansible.com/ui/repo/published/infra/quay_configuration/docs/
+---
+- hosts: localhost
+
+  # Group common module parameters in the following section
+  module_defaults:
+    group/infra.quay_configuration.quay:
+      quay_host: "{{ lookup('env', 'REGISTRY_URL') }}"
+      quay_token: "{{ lookup('env', 'REGISTRY_TOKEN') }}"
+
+  tasks:
+  
+  - name: Create the organization
+    infra.quay_configuration.quay_organization:
+      name: "{{ project }}"  
+      validate_certs: false
+      state: present
+
+  - name: Create default admin and owner permission for user bamboo
+    infra.quay_configuration.quay_team:
+      organization: "{{ project }}"
+      name: owners
+      members:
+        - "bamboo"
+      role: admin
+      append: true
+      validate_certs: false
+      state: present
+
+  - name: Create default read-only permission for user acs
+    infra.quay_configuration.quay_default_perm:
+      organization: "{{ project }}"
+      name: "acs"
+      type: user
+      role: read
+      validate_certs: false
+      state: present
+
+  - name: Create the robot account {{project}}+openshiftpuller
+    infra.quay_configuration.quay_robot:
+      name: "{{ project }}+openshiftpuller"
+      description: Robot account for {{ project }}
+      validate_certs: false
+      state: present
+    register: openshiftpuller_details
+ 
+  - name: Create default read-only permission for robot openshiftpuller
+    infra.quay_configuration.quay_default_perm:
+      organization: "{{ project }}"
+      name: "{{ project }}+openshiftpuller"
+      type: user 
+      role: read
+      validate_certs: false
+      state: present
+  
+  - name: Artifact {{project}}+openshiftpuller token results to Workflows
+    set_stats:
+      data: 
+        robotaccount_token: "{{ (project + '+openshiftpuller:' + openshiftpuller_details['token']) | b64encode }}"
+        ocp_username: "{{ ocp_username }}"
+        ocp_password: "{{ ocp_password }}"
+        project: "{{ project }}"
+        quay_host: "{{ lookup('env', 'REGISTRY_URL') }}"
+        requestsCpu: "{{ requestsCpu }}"
+        requestsMem: "{{ requestsMem }}"
+        limitsCpu: "{{ limitsCpu  }}"
+        limitsMem: "{{ limitsMem }}"

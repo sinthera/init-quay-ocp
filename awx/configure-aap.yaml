@@ -1,0 +1,204 @@
+- name: Create AAP configuration
+  hosts: localhost
+
+  tasks:
+
+  - name: Create custom credential type
+    awx.awx.credential_type:
+      name: AWX-Quay
+      description: Credentials type for Quay
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      kind: cloud
+      inputs:
+        fields:
+          - id: registry_url
+            type: string
+            label: Registry URL
+          - id: registry_token
+            type: string
+            label: Token
+            secret: true
+        required:
+          - registry_url
+          - registry_token
+      injectors:
+        env:
+          REGISTRY_URL: "{{ registry_url }}"
+          REGISTRY_TOKEN: "{{ registry_token }}"
+      state: present
+      validate_certs: false
+
+  - name: Add Quay Credential
+    awx.awx.credential:
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      name: AWX-Quay Credential
+      credential_type: AWX-Quay
+      organization: Default
+      inputs:
+        registry_url: "{{ registry_url }}"
+        registry_token: "{{ registry_token }}"
+      state: present
+      validate_certs: false
+
+
+  - name: Add Git-sourced project
+    awx.awx.project:
+      name: AWX-OCP-Quay-proj
+      description: Create and configure Quay organization and OpenShift resources
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      organization: Default
+      credential: git-sinthera
+      scm_type: git
+      scm_url: https://github.com/sinthera/init-quay-ocp.git
+      validate_certs: false
+      state: present
+
+  - name: Create create-configure-quay-organzation Job Template
+    awx.awx.job_template:
+      name: AWX-create-configure-quay-organzation
+      job_type: run
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      organization: Default
+      inventory: Demo Inventory
+      project: AWX-OCP-Quay-proj
+      playbook: init-quay-ocp/create-configure-quay-organzation.yaml
+      credentials:
+        - AWX-Quay Credential
+      state: present
+      validate_certs: false
+
+  - name: Create -create-openshift-resources Job Template
+    awx.awx.job_template:
+      name: AWX-create-openshift-resources
+      job_type: run
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      organization: Default
+      inventory: Demo Inventory
+      project: AWX-OCP-Quay-proj
+      playbook: init-quay-ocp/loop.yaml
+      state: present
+      validate_certs: false
+
+  - name: Create AWX--create-project workflow job template with workflow nodes in template
+    awx.awx.workflow_job_template:
+      name: AWX--create-project
+      controller_host: "https://awx-host:8443"
+      controller_username: "user"
+      controller_password: "password"
+      inventory: Demo Inventory
+      workflow_nodes:
+        - identifier: Sync project
+          unified_job_template:
+            name: AWX-OCP-Quay-proj
+            inventory:
+              organization:
+                name: Default
+            type: project
+          related:
+            success_nodes:
+              - identifier: Configure Quay
+            # failure_nodes:
+            # always_nodes: []
+            # credentials: []
+        - identifier: Configure Quay
+          unified_job_template:
+            organization:
+              name: Default
+            name: AWX-create-configure-quay-organzation
+            type: job_template
+          credentials: []
+          related:
+            success_nodes:
+              - identifier: Configure OpenShift
+        - identifier: Configure OpenShift
+          unified_job_template:
+            organization:
+              name: Default
+            name: AWX-create-openshift-resources
+            type: job_template
+      
+      survey_enabled: true
+      # https://docs.ansible.com/ansible-tower/latest/html/towerapi/api_ref.html#/Job_Templates/Job_Templates_job_templates_survey_spec_create
+      survey:
+        name: ""
+        description: ""
+        spec:
+        - question_name: Enter a the project name to create
+          question_description: ""
+          required: true
+          type: text
+          variable: project
+          min: 1
+          max: 63
+          default: ""
+        - question_name: Enter your openshift username
+          question_description: ""
+          required: true
+          type: text
+          variable: ocp_username
+          min: 1
+          max: 63
+          default: ""
+        - question_name: Enter your openshift password
+          question_description: ""
+          required: true
+          type: password
+          variable: ocp_password
+          min: 1
+          max: 63
+          default: ""
+        - question_name: Is a gitops scoped project?
+          question_description: ""
+          required: true
+          type: multiplechoice
+          variable: gitops
+          min: 1
+          max: 63
+          default: "yes"
+          choices:
+            - "yes"
+            - "no"
+        - question_name: Enter the project requests.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: requestsCpu
+          min: 0
+          max: 8
+          default: "12"
+        - question_name: Enter the project requests.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: requestsMem
+          min: 0
+          max: 8
+          default: "15Gi"
+        - question_name: Enter the project limits.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: limitsCpu
+          min: 0
+          max: 8
+          default: "18"
+        - question_name: Enter the project limits.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: limitsMem
+          min: 0
+          max: 8
+          default: "20Gi"
+    register: result
+

@@ -1,0 +1,14 @@
+- hosts: localhost
+  collections:
+    - redhat.openshift
+
+  tasks:
+  - name: Include vars 
+    ansible.builtin.include_vars:
+      file: clusters.yaml
+
+  - name: Loop through each cluster
+    include_tasks: create-openshift-resources.yaml
+    with_items: "{{ clusters }}"
+    loop_control:
+      loop_var: cluster

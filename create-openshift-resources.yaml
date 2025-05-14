@@ -1,0 +1,71 @@
+  - name: Cluster log in (obtain access token)
+    redhat.openshift.openshift_auth:
+      username: "{{ ocp_username }}"
+      password: "{{ ocp_password }}"
+      host: "{{ cluster.api_url }}"
+      verify_ssl: false
+    register: k8s_auth_results
+    
+  - name: Set the OCP API token value
+    set_fact:
+      token: "{{ k8s_auth_results.k8s_auth.api_key }}"
+    no_log: true
+
+  - name: Create an OCP project
+    redhat.openshift.k8s:
+      state: present
+      host: "{{ cluster.api_url }}"
+      api_key: "{{ token }}"
+      verify_ssl: false
+      resource_definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: "{{ project }}"
+          labels:
+            argocd.argoproj.io/managed-by: "{{ (gitops == 'yes') | ternary('openshift-gitops', omit) }}"
+
+  - name: Create the resourceQuota into the project
+    redhat.openshift.k8s:
+      state: present
+      host: "{{ cluster.api_url }}"
+      api_key: "{{ token }}"
+      verify_ssl: false
+      resource_definition:
+        apiVersion: v1
+        kind: ResourceQuota
+        metadata:
+          name: "{{ project }}-resource-quota"
+          namespace: "{{ project }}"
+        spec:
+          hard:
+            requests.cpu: "{{ requestsCpu | default('12') }}"
+            requests.memory: "{{ requestsMem | default('15Gi') }}"
+            limits.cpu: "{{ limitsCpu | default('18') }}"
+            limits.memory: "{{ limitsMem | default('20Gi') }}"
+  
+  # Create the secret to pull from quay
+  - name: Set secretData
+    ansible.builtin.set_fact:
+      secret_stringData: "{{ {'auths': { quay_host: { 'auth': robotaccount_token, 'email': '' }}} }}"
+
+  - name: Print the gateway for each host when defined
+    ansible.builtin.debug:
+      msg: auth var {{ secret_stringData }}
+      verbosity: 1
+ 
+  - name: Create the dockerconfigjson secret into the project
+    redhat.openshift.k8s:
+      state: present
+      host: "{{ cluster.api_url }}"
+      api_key: "{{ token }}"
+      verify_ssl: false
+      resource_definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: "{{project}}-openshiftpuller-pull-secret"
+          namespace: "{{ project }}"
+        data:
+          .dockerconfigjson: "{{ secret_stringData | to_json | b64encode }}"
+        type: kubernetes.io/dockerconfigjson
