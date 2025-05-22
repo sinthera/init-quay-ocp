@@ -36,7 +36,7 @@ Input variables:
 - ocp_password: your ocp password
 - gitops: yes/no if gitops scoped
 - a list of administrators users for svil cluster
-  for each cluster:
+- for each cluster:
 - requestsCpu: for resourceQuota
 - requestsMem: for resourceQuota
 - limitsCpu: for resourceQuota
