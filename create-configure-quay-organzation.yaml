@@ -59,11 +59,4 @@
     set_stats:
       data: 
         robotaccount_token: "{{ (project + '+openshiftpuller:' + openshiftpuller_details['token']) | b64encode }}"
-        ocp_username: "{{ ocp_username }}"
-        ocp_password: "{{ ocp_password }}"
-        project: "{{ project }}"
         quay_host: "{{ lookup('env', 'REGISTRY_URL') }}"
-        requestsCpu: "{{ requestsCpu }}"
-        requestsMem: "{{ requestsMem }}"
-        limitsCpu: "{{ limitsCpu  }}"
-        limitsMem: "{{ limitsMem }}"

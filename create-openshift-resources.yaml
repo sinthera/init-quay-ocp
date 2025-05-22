@@ -25,24 +25,23 @@
           labels:
             argocd.argoproj.io/managed-by: "{{ (gitops == 'yes') | ternary('openshift-gitops', omit) }}"
 
-  - name: Create the resourceQuota into the project
+  - name: Assign admin permission to svil users
     redhat.openshift.k8s:
-      state: present
       host: "{{ cluster.api_url }}"
       api_key: "{{ token }}"
       verify_ssl: false
-      resource_definition:
-        apiVersion: v1
-        kind: ResourceQuota
-        metadata:
-          name: "{{ project }}-resource-quota"
-          namespace: "{{ project }}"
-        spec:
-          hard:
-            requests.cpu: "{{ requestsCpu | default('12') }}"
-            requests.memory: "{{ requestsMem | default('15Gi') }}"
-            limits.cpu: "{{ limitsCpu | default('18') }}"
-            limits.memory: "{{ limitsMem | default('20Gi') }}"
+      state: present
+      definition: "{{ lookup('template', './templates/rb_admin-users.yaml.j2') | from_yaml }}"
+    when: cluster.name == 'svil'
+
+  - name: Create resource quota
+    redhat.openshift.k8s:
+      host: "{{ cluster.api_url }}"
+      api_key: "{{ token }}"
+      verify_ssl: false
+      state: present
+      definition: "{{ lookup('template', './templates/rq_resource-quota.yaml.j2') | from_yaml }}"
+
   
   # Create the secret to pull from quay
   - name: Set secretData

@@ -168,35 +168,105 @@
           choices:
             - "yes"
             - "no"
-        - question_name: Enter the project requests.cpu
+        - question_name: Enter SVIL users who need to be administrators in the project
+          question_description: "mandatory syntax <user1,user2>"
+          required: true
+          type: text
+          variable: users
+          default: ""
+        - question_name: Enter the SVIL project requests.cpu
           question_description: ""
           required: true
           type: text
-          variable: requestsCpu
+          variable: svil_requestsCpu
+          min: 0
+          max: 8
+          default: "6"
+        - question_name: Enter the SVIL project requests.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: svil_requestsMem
+          min: 0
+          max: 8
+          default: "7Gi"
+        - question_name: Enter the SVIL project limits.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: svil_limitsCpu
+          min: 0
+          max: 8
+          default: "9"
+        - question_name: Enter the SVIL project limits.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: svil_limitsMem
+          min: 0
+          max: 8
+          default: "10Gi"
+        - question_name: Enter the VALID project requests.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: valid_requestsCpu
           min: 0
           max: 8
           default: "12"
-        - question_name: Enter the project requests.memory
+        - question_name: Enter the VALID project requests.memory
           question_description: ""
           required: true
           type: text
-          variable: requestsMem
+          variable: valid_requestsMem
           min: 0
           max: 8
           default: "15Gi"
-        - question_name: Enter the project limits.cpu
+        - question_name: Enter the VALID project limits.cpu
           question_description: ""
           required: true
           type: text
-          variable: limitsCpu
+          variable: valid_limitsCpu
           min: 0
           max: 8
           default: "18"
-        - question_name: Enter the project limits.memory
+        - question_name: Enter the VALID project limits.memory
           question_description: ""
           required: true
           type: text
-          variable: limitsMem
+          variable: valid_limitsMem
+          min: 0
+          max: 8
+          default: "20Gi"
+        - question_name: Enter the PROD project requests.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: valid_requestsCpu
+          min: 0
+          max: 8
+          default: "12"
+        - question_name: Enter the PROD project requests.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: valid_requestsMem
+          min: 0
+          max: 8
+          default: "15Gi"
+        - question_name: Enter the PROD project limits.cpu
+          question_description: ""
+          required: true
+          type: text
+          variable: valid_limitsCpu
+          min: 0
+          max: 8
+          default: "18"
+        - question_name: Enter the PROD project limits.memory
+          question_description: ""
+          required: true
+          type: text
+          variable: valid_limitsMem
           min: 0
           max: 8
           default: "20Gi"

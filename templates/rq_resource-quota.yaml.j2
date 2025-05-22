@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: "{{ project }}-resource-quota"
+  namespace:  "{{ project }}"
+spec:
+  hard:
+{% if cluster.name == "svil" %}
+    limits.cpu: {{ svil_limitsCpu }}
+    limits.memory: {{ svil_limitsMem }}
+    requests.cpu: {{ svil_requestsCpu }}
+    requests.memory: {{ svil_requestsMem }}
+{% elif cluster.name == "valid" %}
+    limits.cpu: {{ valid_limitsCpu }}
+    limits.memory: {{ valid_limitsMem }}
+    requests.cpu: {{ valid_requestsCpu }}
+    requests.memory: {{ valid_requestsMem }}
+{% elif cluster.name == "prod1" or cluster.name == "prod2" %}
+    limits.cpu: {{ prod_limitsCpu }}
+    limits.memory: {{ prod_limitsMem }}
+    requests.cpu: {{ prod_requestsCpu }}
+    requests.memory: {{ prod_requestsMem }}
+{% endif %}
