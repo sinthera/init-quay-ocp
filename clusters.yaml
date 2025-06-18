@@ -1,5 +1,7 @@
 clusters:
   - name: first-cluster
     api_url: https://api.openshift-first-cluster.it:6443
+    repo: https://<uname>:<token>@<repo-path> #git@ssh.github.com:user/repo.git
   - name: second-cluster
     api_url: https://api.openshift-second-cluster.it:6443
+    repo: https://<uname>:<token>@<repo-path>

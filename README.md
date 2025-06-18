@@ -4,7 +4,7 @@
 ######
 ######
 ######
-###### Date last revision: 11/04/2025
+###### Date last revision: 18/06/2025
 
     These playbooks is used to create and configure new openshift projects. 
     It initially creates quay organization in which it creates the necessaried robot account used in CI/CD pipeline (bamboo) and security checks (ACS). 
@@ -15,7 +15,6 @@
 
 
 ### Create the token to allow the playbook to access to the quay registry and launch aap resources creation
-
 1. Log in to the Quay Container Registry web UI.
 2. Use an existing organization or create a new one.
 3. In the organization, create an application.
@@ -27,13 +26,25 @@
     registry_token: abc123def456lkj987poi765hgf
 8. Launch the template.
 
+### Ansible vault
+1. Create encrypted file with ansible-vault in controller (password protected)
+```bash
+ansible-vault create vault-secrets.yaml
+``` 
+```YAML
+ocp_password_dt: examplepassword
+ssh-key: |
+  --------BEIGIN PRIVATE KEY....ecc
+  ..........END PRIVATE KEY--------
+```
+2. Put the generated file (vault-secrets.yaml) inside the playbook directory and ensure it is included in loop.yaml.
+3. Create AAP credential containing the password to decrypt vault file.
+4. Associate the credential to the AAP template "create-openshift-resources".
 
 ### Playbook run
-
 Input variables:
 - project: the project to create
 - ocp_username: your ocp username
-- ocp_password: your ocp password
 - gitops: yes/no if gitops scoped
 - a list of administrators users for svil cluster
 - for each cluster:

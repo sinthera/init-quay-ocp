@@ -1,3 +1,10 @@
+ 
+  - name: Create a directory
+    ansible.builtin.file:
+      path: /{{ project }}-{{ cluster.name }}
+      state: directory
+      mode: '0755'
+        
   - name: Cluster log in (obtain access token)
     redhat.openshift.openshift_auth:
       username: "{{ ocp_username }}"
@@ -10,20 +17,25 @@
     set_fact:
       token: "{{ k8s_auth_results.k8s_auth.api_key }}"
     no_log: true
+  
+  - name: Save the file before applying it
+    template:
+      src: ./templates/ns_project.yaml.j2
+      dest: "/{{ project }}-{{ cluster.name }}/ns_{{ project }}.yaml"
 
   - name: Create an OCP project
     redhat.openshift.k8s:
-      state: present
       host: "{{ cluster.api_url }}"
       api_key: "{{ token }}"
       verify_ssl: false
-      resource_definition:
-        apiVersion: v1
-        kind: Namespace
-        metadata:
-          name: "{{ project }}"
-          labels:
-            argocd.argoproj.io/managed-by: "{{ (gitops == 'yes') | ternary('openshift-gitops', omit) }}"
+      state: present
+      definition: "{{ lookup('template', './templates/ns_project.yaml.j2') | from_yaml }}"
+
+  - name: Save the file before applying it
+    template:
+      src: ./templates/rb_admin-users.yaml.j2
+      dest: "/{{ project }}-{{ cluster.name }}/rb_{{ project }}-admins.yaml"
+    when: cluster.name == 'svil' and (users | default([]) | length > 0)
 
   - name: Assign admin permission to svil users
     redhat.openshift.k8s:
@@ -32,7 +44,12 @@
       verify_ssl: false
       state: present
       definition: "{{ lookup('template', './templates/rb_admin-users.yaml.j2') | from_yaml }}"
-    when: cluster.name == 'svil'
+    when: cluster.name == 'svil' and (users | default([]) | length > 0)
+
+  - name: Save the file before applying it
+    template:
+      src: ./templates/rq_resource-quota.yaml.j2
+      dest: "/{{ project }}-{{ cluster.name }}/rq_{{ project }}-resource-quota.yaml"
 
   - name: Create resource quota
     redhat.openshift.k8s:
@@ -47,24 +64,73 @@
   - name: Set secretData
     ansible.builtin.set_fact:
       secret_stringData: "{{ {'auths': { quay_host: { 'auth': robotaccount_token, 'email': '' }}} }}"
+    when: robotaccount_token is defined
 
   - name: Print the gateway for each host when defined
     ansible.builtin.debug:
       msg: auth var {{ secret_stringData }}
       verbosity: 1
- 
+    when: robotaccount_token is defined
+
+  - name: Save the file before applying it
+    template:
+      src: ./templates/secret_openshiftpuller.yaml.j2
+      dest: "/{{ project }}-{{ cluster.name }}/secret_{{project}}-openshiftpuller-pull-secret.yaml"
+    when: robotaccount_token is defined
+
   - name: Create the dockerconfigjson secret into the project
     redhat.openshift.k8s:
-      state: present
       host: "{{ cluster.api_url }}"
       api_key: "{{ token }}"
       verify_ssl: false
-      resource_definition:
-        apiVersion: v1
-        kind: Secret
-        metadata:
-          name: "{{project}}-openshiftpuller-pull-secret"
-          namespace: "{{ project }}"
-        data:
-          .dockerconfigjson: "{{ secret_stringData | to_json | b64encode }}"
-        type: kubernetes.io/dockerconfigjson
+      state: present
+      definition: "{{ lookup('template', './templates/secret_openshiftpuller.yaml.j2') | from_yaml }}"
+    when: robotaccount_token is defined
+
+  # - name: ls dir
+  #   command: ls -l "/{{ project }}-{{ cluster.name }}"
+  #   register: ls_output
+  #   changed_when: false
+
+  - name: Write SSH key on tmp file
+    copy:
+      content: "{{ <key_secret_value> }}"
+      dest: "/tmp/github-key"
+      mode: '0400'
+
+  - name: Clone GIT Repository
+    ansible.builtin.git:
+      repo: "{{ cluster.repo }}"
+      dest: "/tmp-repo-dir"
+      clone: yes
+      update: yes
+      accept_hostkey: yes
+      key_file: /tmp/github-key
+    environment:
+      GIT_SSH_COMMAND: "ssh -i /tmp/github-key -o StrictHostKeyChecking=no -p 443"
+
+  - name: Copy folder
+    copy:
+      dest: "/tmp-repo-dir/create-ocp-project/applied-files"
+      src: "/{{ project }}-{{ cluster.name }}"
+      force: true
+
+  - name: "Add output directory to git"
+    ansible.builtin.shell: |
+      export GIT_SSH_COMMAND="ssh -i /tmp/github-key -o StrictHostKeyChecking=no -p 443"
+      git config --global user.name "aap"
+      git config --global user.email "aap@company.com"
+      git add -A && git commit -m "Applied OCP files for project {{ project }}-{{ cluster.name }}" && git push
+    args:
+      chdir: "/tmp-repo-dir/create-ocp-project/applied-files/{{ project }}-{{ cluster.name }}"
+    ignore_errors: true
+    register: output
+    failed_when: >
+      output.msg != "" and
+      ("error" in output.msg or
+      "conflict" in output.msg or
+      "Errno" in output.msg or
+      "fatal" in output.msg or
+      (output.stdout != "" and
+      "nothing to commit, working tree clean" not in output.stdout) or
+      (output.stderr != ""))

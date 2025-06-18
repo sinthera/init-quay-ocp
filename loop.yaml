@@ -7,6 +7,10 @@
     ansible.builtin.include_vars:
       file: clusters.yaml
 
+  - name: Include encrypted vars 
+    ansible.builtin.include_vars:
+      file: vault-secrets.yaml
+
   - name: Loop through each cluster
     include_tasks: create-openshift-resources.yaml
     with_items: "{{ clusters }}"
