@@ -29,10 +29,10 @@
 ### Ansible vault
 1. Create encrypted file with ansible-vault in controller (password protected)
 ```bash
-ansible-vault create vault-secrets.yaml
+[user@host]# ansible-vault create vault-secrets.yaml
 ``` 
 ```YAML
-ocp_password_dt: examplepassword
+ocp_password: secretpassword
 ssh-key: |
   --------BEIGIN PRIVATE KEY....ecc
   ..........END PRIVATE KEY--------
