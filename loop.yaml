@@ -16,3 +16,5 @@
     with_items: "{{ clusters }}"
     loop_control:
       loop_var: cluster
+    vars:
+      ocp_username: user-abc

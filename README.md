@@ -38,7 +38,7 @@ ssh-key: |
   ..........END PRIVATE KEY--------
 ```
 2. Put the generated file (vault-secrets.yaml) inside the playbook directory and ensure it is included in loop.yaml.
-3. Create AAP credential containing the password to decrypt vault file.
+3. Create AAP credential containing the password to decrypt vault file (vault_password).
 4. Associate the credential to the AAP template "create-openshift-resources".
 
 ### Playbook run

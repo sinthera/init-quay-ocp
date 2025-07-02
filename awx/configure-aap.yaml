@@ -59,9 +59,9 @@
       validate_certs: false
       state: present
 
-  - name: Create create-configure-quay-organzation Job Template
+  - name: Create create-configure-quay-organization Job Template
     awx.awx.job_template:
-      name: AWX-create-configure-quay-organzation
+      name: AWX-create-configure-quay-organization
       job_type: run
       controller_host: "https://awx-host:8443"
       controller_username: "user"
@@ -69,13 +69,26 @@
       organization: Default
       inventory: Demo Inventory
       project: AWX-OCP-Quay-proj
-      playbook: init-quay-ocp/create-configure-quay-organzation.yaml
+      playbook: init-quay-ocp/create-configure-quay-organization.yaml
       credentials:
         - AWX-Quay Credential
       state: present
       validate_certs: false
+      survey_enabled: true
+      survey_spec:
+        name: ""
+        description: ""
+        spec:
+        - question_name: Enter the organization name to create
+          question_description: ""
+          required: true
+          type: text
+          variable: project
+          min: 1
+          max: 63
+          default: ""
 
-  - name: Create -create-openshift-resources Job Template
+  - name: Create create-openshift-resources Job Template
     awx.awx.job_template:
       name: AWX-create-openshift-resources
       job_type: run
@@ -86,10 +99,126 @@
       inventory: Demo Inventory
       project: AWX-OCP-Quay-proj
       playbook: init-quay-ocp/loop.yaml
+      credentials:
+        - vault_password
       state: present
       validate_certs: false
+      survey_enabled: true
+      survey_spec:
+        name: ""
+        description: ""
+        spec:
+        - question_name: Enter the project name to create
+          question_description: ""
+          required: true
+          type: text
+          variable: project
+          min: 1
+          max: 63
+          default: ""
+        - question_name: Is a gitops scoped project?
+          question_description: ""
+          required: true
+          type: multiplechoice
+          variable: gitops
+          min: 1
+          max: 63
+          default: "yes"
+          choices:
+            - "yes"
+            - "no"
+        - question_name: Enter SVIL users who need to be administrators in the project
+          question_description: "mandatory syntax <user1,user2>"
+          required: false
+          type: text
+          variable: users
+          default: ""
+        - question_name: Enter the SVIL project requests.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: svil_requestsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the SVIL project requests.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: svil_requestsMem
+          min: 0
+          max: 8
+        - question_name: Enter the SVIL project limits.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: svil_limitsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the SVIL project limits.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: svil_limitsMem
+          min: 0
+          max: 8
+        - question_name: Enter the VALID project requests.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: valid_requestsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the VALID project requests.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: valid_requestsMem
+          min: 0
+          max: 8
+        - question_name: Enter the VALID project limits.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: valid_limitsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the VALID project limits.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: valid_limitsMem
+          min: 0
+          max: 8
+        - question_name: Enter the PROD project requests.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: prod_requestsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the PROD project requests.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: prod_requestsMem
+          min: 0
+          max: 8
+        - question_name: Enter the PROD project limits.cpu
+          question_description: ""
+          required: false
+          type: text
+          variable: prod_limitsCpu
+          min: 0
+          max: 8
+        - question_name: Enter the PROD project limits.memory
+          question_description: ""
+          required: false
+          type: text
+          variable: prod_limitsMem
+          min: 0
+          max: 8
 
-  - name: Create AWX--create-project workflow job template with workflow nodes in template
+  - name: Create AWX-create-project workflow job template with workflow nodes in template
     awx.awx.workflow_job_template:
       name: AWX--create-project
       controller_host: "https://awx-host:8443"
@@ -114,7 +243,7 @@
           unified_job_template:
             organization:
               name: Default
-            name: AWX-create-configure-quay-organzation
+            name: AWX-create-configure-quay-organization
             type: job_template
           credentials: []
           related:
@@ -141,22 +270,6 @@
           min: 1
           max: 63
           default: ""
-        - question_name: Enter your openshift username
-          question_description: ""
-          required: true
-          type: text
-          variable: ocp_username
-          min: 1
-          max: 63
-          default: ""
-        - question_name: Enter your openshift password
-          question_description: ""
-          required: true
-          type: password
-          variable: ocp_password
-          min: 1
-          max: 63
-          default: ""
         - question_name: Is a gitops scoped project?
           question_description: ""
           required: true
@@ -170,7 +283,7 @@
             - "no"
         - question_name: Enter SVIL users who need to be administrators in the project
           question_description: "mandatory syntax <user1,user2>"
-          required: true
+          required: false
           type: text
           variable: users
           default: ""
@@ -181,7 +294,6 @@
           variable: svil_requestsCpu
           min: 0
           max: 8
-          default: "6"
         - question_name: Enter the SVIL project requests.memory
           question_description: ""
           required: true
@@ -189,7 +301,6 @@
           variable: svil_requestsMem
           min: 0
           max: 8
-          default: "7Gi"
         - question_name: Enter the SVIL project limits.cpu
           question_description: ""
           required: true
@@ -197,7 +308,6 @@
           variable: svil_limitsCpu
           min: 0
           max: 8
-          default: "9"
         - question_name: Enter the SVIL project limits.memory
           question_description: ""
           required: true
@@ -205,7 +315,6 @@
           variable: svil_limitsMem
           min: 0
           max: 8
-          default: "10Gi"
         - question_name: Enter the VALID project requests.cpu
           question_description: ""
           required: true
@@ -213,7 +322,6 @@
           variable: valid_requestsCpu
           min: 0
           max: 8
-          default: "12"
         - question_name: Enter the VALID project requests.memory
           question_description: ""
           required: true
@@ -221,7 +329,6 @@
           variable: valid_requestsMem
           min: 0
           max: 8
-          default: "15Gi"
         - question_name: Enter the VALID project limits.cpu
           question_description: ""
           required: true
@@ -229,7 +336,6 @@
           variable: valid_limitsCpu
           min: 0
           max: 8
-          default: "18"
         - question_name: Enter the VALID project limits.memory
           question_description: ""
           required: true
@@ -237,7 +343,6 @@
           variable: valid_limitsMem
           min: 0
           max: 8
-          default: "20Gi"
         - question_name: Enter the PROD project requests.cpu
           question_description: ""
           required: true
@@ -245,7 +350,6 @@
           variable: valid_requestsCpu
           min: 0
           max: 8
-          default: "12"
         - question_name: Enter the PROD project requests.memory
           question_description: ""
           required: true
@@ -253,7 +357,6 @@
           variable: valid_requestsMem
           min: 0
           max: 8
-          default: "15Gi"
         - question_name: Enter the PROD project limits.cpu
           question_description: ""
           required: true
@@ -261,7 +364,6 @@
           variable: valid_limitsCpu
           min: 0
           max: 8
-          default: "18"
         - question_name: Enter the PROD project limits.memory
           question_description: ""
           required: true
@@ -269,6 +371,5 @@
           variable: valid_limitsMem
           min: 0
           max: 8
-          default: "20Gi"
     register: result
 
