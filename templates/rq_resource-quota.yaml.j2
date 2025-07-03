@@ -6,18 +6,18 @@ metadata:
 spec:
   hard:
 {% if cluster.name == "svil" %}
-    limits.cpu: {{ svil_limitsCpu }}
-    limits.memory: {{ svil_limitsMem }}
-    requests.cpu: {{ svil_requestsCpu }}
-    requests.memory: {{ svil_requestsMem }}
+    limits.cpu: {{ svil_limitsCpu | default(18) }}
+    limits.memory: {{ svil_limitsMem | default('20Gi') }}
+    requests.cpu: {{ svil_requestsCpu | default(12) }}
+    requests.memory: {{ svil_requestsMem | default('15Gi') }}
 {% elif cluster.name == "valid" %}
-    limits.cpu: {{ valid_limitsCpu }}
-    limits.memory: {{ valid_limitsMem }}
-    requests.cpu: {{ valid_requestsCpu }}
-    requests.memory: {{ valid_requestsMem }}
+    limits.cpu: {{ valid_limitsCpu | default(18) }}
+    limits.memory: {{ valid_limitsMem | default('20Gi') }}
+    requests.cpu: {{ valid_requestsCpu | default(12) }}
+    requests.memory: {{ valid_requestsMem | default('15Gi') }}
 {% elif cluster.name == "prod1" or cluster.name == "prod2" %}
-    limits.cpu: {{ prod_limitsCpu }}
-    limits.memory: {{ prod_limitsMem }}
-    requests.cpu: {{ prod_requestsCpu }}
-    requests.memory: {{ prod_requestsMem }}
+    limits.cpu: {{ prod_limitsCpu | default(18) }}
+    limits.memory: {{ prod_limitsMem | default('20Gi') }}
+    requests.cpu: {{ prod_requestsCpu | default(12) }}
+    requests.memory: {{ prod_requestsMem | default('15Gi') }}
 {% endif %}
